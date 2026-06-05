@@ -1,0 +1,71 @@
+{
+  "name": "mainsail",
+  "title": "Mainsail",
+  "version": "0.1.1",
+  "description": "Installs Mainsail v2.17.0 as a second web frontend. Runs on port 81 by default so Fluidd stays on port 80. Set port 80 to make Mainsail primary; Fluidd shifts to 81 automatically.",
+  "tagline": "Mainsail web interface alongside Fluidd, on your chosen port.",
+  "category": "ui",
+  "channel": "stable",
+  "printer_specific": true,
+  "published_at": "2026-01-10",
+  "updated_at": "2026-03-05",
+  "source": "https://github.com/bespok3d-org/plugin-mainsail",
+  "publisher": "PLACEHOLDER",
+  "provides": [
+    {
+      "service": "mainsail-ui"
+    }
+  ],
+  "require": [],
+  "conflicts": [],
+  "requires": {
+    "capabilities": [
+      "klipper-generic"
+    ],
+    "variables": [
+      {
+        "name": "MAINSAIL_PORT",
+        "description": "Port for Mainsail (default: 81). Set to 80 to make Mainsail primary; Fluidd moves to 81.",
+        "required": true
+      }
+    ]
+  },
+  "config": [
+    {
+      "key": "MAINSAIL_PORT",
+      "label": "Mainsail port",
+      "type": "http-port",
+      "default": "81",
+      "hint": "Auto-assigned. Make Mainsail primary to serve it on port 80.",
+      "required": true,
+      "userEditable": true
+    }
+  ],
+  "permissions": [
+    "nginx.server"
+  ],
+  "install": {
+    "dirs": [],
+    "symlinks": [
+      {
+        "from": "files/klipper/mainsail.cfg",
+        "to": "$BESPOK3D_KLIPPER/mainsail.cfg"
+      }
+    ],
+    "patches": [],
+    "start": [
+      "sh $BESPOK3D_PLUGINS/mainsail/files/etc/init.d/s90mainsail start $MAINSAIL_PORT"
+    ]
+  },
+  "stop": [
+    "sh $BESPOK3D_PLUGINS/mainsail/files/etc/init.d/s90mainsail stop"
+  ],
+  "endpoints": [
+    {
+      "label": "Mainsail",
+      "path": ":81/"
+    }
+  ],
+  "conflict_resolutions": [],
+  "files": []
+}
