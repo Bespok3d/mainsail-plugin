@@ -1,12 +1,13 @@
 {
   "name": "mainsail",
   "title": "Mainsail",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Installs Mainsail v2.17.0 as a second web frontend. Runs on port 81 by default so Fluidd stays on port 80. Set port 80 to make Mainsail primary; Fluidd shifts to 81 automatically.",
   "tagline": "Mainsail web interface alongside Fluidd, on your chosen port.",
   "category": "ui",
   "channel": "stable",
   "printer_specific": true,
+  "changelog": "doc/CHANGELOG.md",
   "published_at": "2026-01-10",
   "updated_at": "2026-03-05",
   "source": "https://github.com/bespok3d-org/plugin-mainsail",
@@ -42,7 +43,8 @@
     }
   ],
   "permissions": [
-    "nginx.server"
+    "nginx.server",
+    "restart"
   ],
   "install": {
     "dirs": [],
@@ -55,6 +57,9 @@
     "patches": [],
     "start": [
       "sh $BESPOK3D_PLUGINS/mainsail/files/etc/init.d/s90mainsail start $MAINSAIL_PORT"
+    ],
+    "restart": [
+      "klipper"
     ]
   },
   "stop": [
