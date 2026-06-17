@@ -1,0 +1,76 @@
+{
+  "name": "mainsail",
+  "title": "Mainsail",
+  "version": "0.2.0-experiment",
+  "description": "Installs Mainsail v2.17.0 as a second web frontend. Runs on port 81 by default so Fluidd stays on port 80. Set port 80 to make Mainsail primary; Fluidd shifts to 81 automatically. Bleeding-edge build: adds the AFC \"Toolchanger Eject Mode\" toggle (Eject docks the mounted tool on a toolchanger).",
+  "tagline": "Mainsail web interface alongside Fluidd, on your chosen port.",
+  "category": "ui",
+  "channel": "experiment",
+  "printer_specific": true,
+  "changelog": "doc/CHANGELOG.md",
+  "published_at": "2026-01-10",
+  "updated_at": "2026-06-12",
+  "source": "https://github.com/bespok3d-org/plugin-mainsail",
+  "publisher": "PLACEHOLDER",
+  "provides": [
+    {
+      "service": "mainsail-ui"
+    }
+  ],
+  "require": [],
+  "conflicts": [],
+  "requires": {
+    "capabilities": [
+      "klipper-generic"
+    ],
+    "variables": [
+      {
+        "name": "MAINSAIL_PORT",
+        "description": "Port for Mainsail (default: 81). Set to 80 to make Mainsail primary; Fluidd moves to 81.",
+        "required": true
+      }
+    ]
+  },
+  "config": [
+    {
+      "key": "MAINSAIL_PORT",
+      "label": "Mainsail port",
+      "type": "http-port",
+      "default": "81",
+      "hint": "Auto-assigned. Make Mainsail primary to serve it on port 80.",
+      "required": true,
+      "userEditable": true
+    }
+  ],
+  "permissions": [
+    "nginx.server",
+    "restart"
+  ],
+  "install": {
+    "dirs": [],
+    "symlinks": [
+      {
+        "from": "files/klipper/mainsail.cfg",
+        "to": "$BESPOK3D_KLIPPER/mainsail.cfg"
+      }
+    ],
+    "patches": [],
+    "start": [
+      "sh $BESPOK3D_PLUGINS/mainsail/files/etc/init.d/s90mainsail start $MAINSAIL_PORT"
+    ],
+    "restart": [
+      "klipper"
+    ]
+  },
+  "stop": [
+    "sh $BESPOK3D_PLUGINS/mainsail/files/etc/init.d/s90mainsail stop"
+  ],
+  "endpoints": [
+    {
+      "label": "Mainsail",
+      "path": ":81/"
+    }
+  ],
+  "conflict_resolutions": [],
+  "files": []
+}

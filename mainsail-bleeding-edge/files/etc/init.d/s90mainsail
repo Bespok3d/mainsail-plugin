@@ -1,0 +1,27 @@
+#!/bin/sh
+NGINX_TMPL="/userdata/bespok3d/usr/local/plugins/mainsail/files/nginx/mainsail.conf"
+NGINX_CONF="/etc/nginx/conf.d/mainsail.conf"
+FLUIDD_SITE="/etc/nginx/sites-available/fluidd"
+
+case "$1" in
+  start)
+    PORT="${2:-81}"
+    sed "s/__PORT__/${PORT}/g" "$NGINX_TMPL" > "$NGINX_CONF"
+    echo "nginx config written: port $PORT"
+    if [ "$PORT" = "80" ]; then
+      sed -i 's/listen 80;/listen 81;/' "$FLUIDD_SITE"
+      sed -i 's/listen \[::\]:80;/listen [::]:81;/' "$FLUIDD_SITE"
+      echo "Fluidd moved to port 81"
+    fi
+    nginx -s reload && echo "nginx reloaded"
+    ;;
+  stop)
+    rm -f "$NGINX_CONF" && echo "nginx config removed"
+    if grep -q "listen 81;" "$FLUIDD_SITE" 2>/dev/null; then
+      sed -i 's/listen 81;/listen 80;/' "$FLUIDD_SITE"
+      sed -i 's/listen \[::\]:81;/listen [::]:80;/' "$FLUIDD_SITE"
+      echo "Fluidd restored to port 80"
+    fi
+    nginx -s reload && echo "nginx reloaded"
+    ;;
+esac
