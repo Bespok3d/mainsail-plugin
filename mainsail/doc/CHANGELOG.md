@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Vendored Mainsail bumped v2.17.0 to v2.18.0.
+- Re-applied the toolchanger Eject gating patch (`laneActive`) from 0.1.3 to
+  the new bundle; behavior unchanged.
+
 ## 0.1.3
 
 - AFC panel fix for toolchangers: the lane Eject button now enables only when
