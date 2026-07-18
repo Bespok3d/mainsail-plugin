@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.5
+
+- AFC panel: the lane Eject button is now also disabled while the printer is
+  actively printing, reusing Mainsail's own `printerIsPrintingOnly` state so it
+  matches the Load/Unload buttons. Eject stays available while the print is
+  paused, so filament can still be swapped mid-print. Extends the existing
+  `laneActive` eject patch in the vendored bundle (no re-vendor; Mainsail stays
+  v2.18.0).
+
 ## 0.1.4
 
 - Vendored Mainsail bumped v2.17.0 to v2.18.0.
