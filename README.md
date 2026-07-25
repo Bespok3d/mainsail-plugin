@@ -34,8 +34,9 @@ npx b3-builder build --source ./mainsail --atom-repo Bespok3d/mainsail-plugin
 Bump `mainsail/manifest.json` `version` and push to `main`. CI runs the `Bespok3d/b3-builder`
 Action, which packs the `.b3` and cuts a release; the `register-atoms` action from
 `Bespok3d/main-index` then registers the atom. The build excludes `mainsail-bleeding-edge`, so only
-`mainsail` is published. This repo contributes atoms only and publishes no list of its own. Secret:
-`MAIN_INDEX_TOKEN` (contents:write on main-index). Signing deferred.
+`mainsail` is published. This repo contributes atoms only and publishes no list of its own.
+Secrets: `MAIN_INDEX_TOKEN` (contents:write on main-index) and `REGISTRY_SIGNING_KEY` (the org
+registry key the `b3-builder` Action signs each `.b3` and atom with).
 
 ## Maintainership
 
