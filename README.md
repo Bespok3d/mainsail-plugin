@@ -1,5 +1,10 @@
 # mainsail-plugin
 
+[![licence](https://img.shields.io/badge/licence-GPL--3.0-blue)](LICENSE)
+[![release](https://img.shields.io/github/v/release/Bespok3d/mainsail-plugin)](https://github.com/Bespok3d/mainsail-plugin/releases)
+![printer](https://img.shields.io/badge/printer-Snapmaker%20U1-informational)
+![stock firmware](https://img.shields.io/badge/stock%20firmware-no%20flashing-brightgreen)
+
 Mainsail web interface alongside Fluidd, on your chosen port.
 
 A solo Bespok3d plugin repo: it ships one plugin (`mainsail`) and publishes a single index atom into `Bespok3d/main-index/atoms/`.
