@@ -1,7 +1,7 @@
 {
   "name": "mainsail",
   "title": "Mainsail",
-  "version": "0.2.0-experiment",
+  "version": "0.2.1-experiment",
   "author": "bespoked",
   "description": "Installs Mainsail v2.17.0 as a second web frontend. Runs on port 81 by default so Fluidd stays on port 80. Set port 80 to make Mainsail primary; Fluidd shifts to 81 automatically. Bleeding-edge build: adds the AFC \"Toolchanger Eject Mode\" toggle (Eject docks the mounted tool on a toolchanger).",
   "tagline": "Mainsail web interface alongside Fluidd, on your chosen port.",

@@ -1,8 +1,9 @@
 #!/bin/sh
 # Download the pinned upstream Mainsail release, verify sha256, and extract into
 # files/html/. Run this once after cloning, or whenever VERSION is bumped.
-# NOTE: re-vendoring drops the AFC eject patch in assets/index-*.js; re-apply it
-# (see doc/CHANGELOG.md 0.1.3) and run the afc-lite frontend guard test.
+# Extracting wipes the tree, so scripts/patch-mainsail.sh runs afterwards and puts
+# every Bespok3d modification back. It fails loudly on a chunk whose shape upstream
+# changed, so a re-vendor never loses a patch quietly.
 #
 # Usage: ./scripts/fetch-mainsail.sh
 
@@ -50,5 +51,8 @@ if [ ! -f "$TARGET_DIR/index.html" ]; then
   echo "ERROR: $TARGET_DIR/index.html missing after extract" >&2
   exit 1
 fi
+
+echo "Re-applying Bespok3d patches..."
+"$PLUGIN_DIR/scripts/patch-mainsail.sh"
 
 echo "Done. Mainsail ${MAINSAIL_VERSION} extracted to $TARGET_DIR"
