@@ -30,6 +30,12 @@
         "name": "MAINSAIL_PORT",
         "description": "Port for Mainsail (default: 81). Set to 80 to make Mainsail primary; Fluidd moves to 81.",
         "required": true
+      },
+      {
+        "name": "MAINSAIL_HIDE_VIRTUAL_TOOLS",
+        "description": "Leave the tool buttons the printer has no lane for out of the Extruder panel: on or off.",
+        "required": false,
+        "default": "off"
       }
     ]
   },
@@ -42,6 +48,19 @@
       "hint": "Auto-assigned. Make Mainsail primary to serve it on port 80.",
       "required": true,
       "userEditable": true
+    },
+    {
+      "key": "MAINSAIL_HIDE_VIRTUAL_TOOLS",
+      "label": "Hide unused tool buttons",
+      "type": "select",
+      "options": [
+        "off",
+        "on"
+      ],
+      "default": "off",
+      "hint": "Off by default. On, the Extruder panel shows one button per lane the printer actually has, instead of all 32 the firmware keeps room for and the saved copy the printer keeps of each. The tools are still there and a macro can still call them. Reload the page after changing this.",
+      "userEditable": true,
+      "scope": "printer"
     }
   ],
   "permissions": [
@@ -57,6 +76,12 @@
       }
     ],
     "patches": [],
+    "templates": [
+      {
+        "from": "files/b3d-tool-buttons.js.tmpl",
+        "to": "files/html/b3d-tool-buttons.js"
+      }
+    ],
     "start": [
       "sh $BESPOK3D_PLUGINS/mainsail/files/etc/init.d/s90mainsail start $MAINSAIL_PORT"
     ],

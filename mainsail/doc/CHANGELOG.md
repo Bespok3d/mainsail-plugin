@@ -26,6 +26,12 @@
   out of another tab's cached status, and that cache never holds the printer's configuration, so
   Mainsail found no extruders in it. Mainsail now asks in a way the firmware cannot answer from
   that cache.
+- New **Hide unused tool buttons** setting, off by default. The printer's firmware keeps room for 32
+  logical tools and registers a macro for each, and the printer saves a copy of each next to it, so
+  the Extruder panel listed all of them on a 4 lane machine. With the setting on the panel shows one
+  button per lane the printer actually has, and the saved copies are gone. The tools are still there
+  and a macro can still call them, and the count comes from the printer rather than from a number
+  written into the plugin. Reload the page after changing it.
 - The vendored bundle's Bespok3d modifications now live in `scripts/patch-mainsail.sh`, which
   `scripts/fetch-mainsail.sh` runs after a re-vendor and the gate re-checks with `--verify`.
   Re-vendoring used to drop the Eject patch and it was put back by hand. Mainsail stays v2.18.0.

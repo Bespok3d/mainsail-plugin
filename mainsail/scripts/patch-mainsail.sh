@@ -204,7 +204,7 @@ apply_patch "AFC toolmap watcher loaded" "$HTML_DIR/index.html" \
 #    Mainsail keep the page without the script tag, and the watcher never loads for them.
 apply_patch "AFC toolmap watcher cached" "$HTML_DIR/sw.js" \
   '{url:"index.html",revision:"371e714ce82cccb77331ff4a06d1e3e1"}' \
-  '{url:"index.html",revision:"b3d-afc-toolmap-1"}'
+  '{url:"index.html",revision:"b3d-afc-toolmap-2"}'
 
 # 8. The dialog's print button. A held print has not started yet and its file has not been
 #    selected, so upstream's call would start it without the map that was just made; releasing the
@@ -253,7 +253,7 @@ for app_chunk in "$REPO_ROOT"/*/files/html/assets/index-*.js; do
   # fetch ours. Bump the revision string whenever the patches above change.
   apply_patch "Moonraker cache bust served fresh ($channel)" "${app_chunk%/assets/*}/sw.js" \
     "{url:\"assets/$(basename "$app_chunk")\",revision:null}" \
-    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-1\"}"
+    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-2\"}"
 
   channels_cache_busted=$((channels_cache_busted + 1))
 done
@@ -262,5 +262,25 @@ if [ "$channels_cache_busted" -eq 0 ]; then
   echo "ERROR: Moonraker cache bust: no vendored Mainsail bundle found under $REPO_ROOT" >&2
   exit 1
 fi
+
+# 10. The Extruder panel's tool buttons. The U1 registers a T0 to T31 gcode macro whatever it has
+#     lanes for, and the printer saves a T0.10001 style macro next to each, so the panel lists them
+#     all on a 4 lane printer. The settings file the daemon renders at install says whether the
+#     plugin's "Hide unused tool buttons" setting is on and holds the rule; the panel asks it,
+#     passing the printer's own objects so the lane count comes from the printer and never from a
+#     number written here. With the setting off, and on a bundle where the settings file never
+#     loaded, every tool is kept, which is upstream's own behaviour.
+install_file "Tool button rule" \
+  "$PLUGIN_DIR/files/b3d-tool-buttons.js.tmpl" \
+  "$HTML_DIR/b3d-tool-buttons.js"
+
+apply_patch "Tool button rule loaded" "$HTML_DIR/index.html" \
+  '<script src="/b3d-afc-toolmap.js"></script>' \
+  '<script src="/b3d-afc-toolmap.js"></script><script src="/b3d-tool-buttons.js"></script>'
+
+# shellcheck disable=SC2016 # $store is a Vue property name in the bundle, not a shell variable
+apply_patch "Extruder panel hides unused tools" "$APP_CHUNK" \
+  'Object.keys(e).filter(i=>i.match(/^T\d+/)).sort(s)' \
+  'Object.keys(e).filter(i=>i.match(/^T\d+/)&&(!window.b3dToolButtons||window.b3dToolButtons.keepsToolButton(i,this.$store.state.printer))).sort(s)'
 
 echo "Done. All Bespok3d patches are present."
