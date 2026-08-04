@@ -7,7 +7,9 @@ alongside Fluidd, on a port you choose.
 
 - Serves Mainsail v2.18.0.
 - Runs on port 81 by default, so Fluidd stays on port 80.
-- Set the port to 80 to make Mainsail primary; Fluidd then moves to 81 automatically.
+- Set the port to 80 to make Mainsail primary; Fluidd then moves to 81 automatically. Move
+  Mainsail off 80 again and Fluidd goes back to it: whichever interface is set to 80 holds it,
+  the other one is on 81.
 - A print-start dialog that maps the file's tools onto your AFC lanes before the print begins.
 
 ## Mapping lanes for a print sent from the slicer

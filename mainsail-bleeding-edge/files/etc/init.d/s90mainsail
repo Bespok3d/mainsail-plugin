@@ -1,27 +1,57 @@
 #!/bin/sh
-NGINX_TMPL="/userdata/bespok3d/usr/local/plugins/mainsail/files/nginx/mainsail.conf"
-NGINX_CONF="/etc/nginx/conf.d/mainsail.conf"
-FLUIDD_SITE="/etc/nginx/sites-available/fluidd"
+# One nginx serves both web interfaces, and only one of them can hold port 80: a second server block
+# on a port that already has a default server is dropped, so the interface nginx drops answers
+# nowhere. The rule this script keeps: whichever interface is set to 80 holds it, and the other one
+# moves to 81.
+: "${NGINX_TMPL:=/userdata/bespok3d/usr/local/plugins/mainsail/files/nginx/mainsail.conf}"
+: "${NGINX_CONF:=/etc/nginx/conf.d/mainsail.conf}"
+: "${FLUIDD_SITE:=/etc/nginx/sites-enabled/fluidd}"
+
+PRIMARY_PORT=80
+SECONDARY_PORT=81
+
+# sites-enabled/fluidd is the stock symlink into sites-available on some firmware and a plain file of
+# its own on others. nginx serves whatever the name resolves to, so that is the file the port has to
+# be written into.
+served_fluidd_site() {
+  readlink -f "$FLUIDD_SITE" 2>/dev/null || echo "$FLUIDD_SITE"
+}
+
+move_fluidd_to_port() {
+  fluidd_port="$1"
+  fluidd_site="$(served_fluidd_site)"
+  if [ ! -f "$fluidd_site" ]; then
+    echo "Fluidd site not found at $FLUIDD_SITE, left alone"
+    return 0
+  fi
+  # Written through a temporary file and copied back, so the site keeps its own inode and mode: the
+  # rewrite has to work under busybox on the printer and is not allowed to leave a half written site
+  # behind if it fails.
+  rewritten_site="${fluidd_site}.b3d-rewrite"
+  sed \
+    -e "s/^\([[:space:]]*listen[[:space:]]\{1,\}\)[0-9]\{1,\}/\1${fluidd_port}/" \
+    -e "s/^\([[:space:]]*listen[[:space:]]\{1,\}\[::\]:\)[0-9]\{1,\}/\1${fluidd_port}/" \
+    "$fluidd_site" > "$rewritten_site" || return 1
+  cat "$rewritten_site" > "$fluidd_site"
+  rm -f "$rewritten_site"
+  echo "Fluidd on port $fluidd_port"
+}
 
 case "$1" in
   start)
-    PORT="${2:-81}"
+    PORT="${2:-$SECONDARY_PORT}"
     sed "s/__PORT__/${PORT}/g" "$NGINX_TMPL" > "$NGINX_CONF"
     echo "nginx config written: port $PORT"
-    if [ "$PORT" = "80" ]; then
-      sed -i 's/listen 80;/listen 81;/' "$FLUIDD_SITE"
-      sed -i 's/listen \[::\]:80;/listen [::]:81;/' "$FLUIDD_SITE"
-      echo "Fluidd moved to port 81"
+    if [ "$PORT" = "$PRIMARY_PORT" ]; then
+      move_fluidd_to_port "$SECONDARY_PORT"
+    else
+      move_fluidd_to_port "$PRIMARY_PORT"
     fi
     nginx -s reload && echo "nginx reloaded"
     ;;
   stop)
     rm -f "$NGINX_CONF" && echo "nginx config removed"
-    if grep -q "listen 81;" "$FLUIDD_SITE" 2>/dev/null; then
-      sed -i 's/listen 81;/listen 80;/' "$FLUIDD_SITE"
-      sed -i 's/listen \[::\]:81;/listen [::]:80;/' "$FLUIDD_SITE"
-      echo "Fluidd restored to port 80"
-    fi
+    move_fluidd_to_port "$PRIMARY_PORT"
     nginx -s reload && echo "nginx reloaded"
     ;;
 esac

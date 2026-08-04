@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.3-experiment
+
+- Fluidd comes back on port 80 when Mainsail is moved off it. Until now Mainsail pushed Fluidd to
+  port 81 when it took port 80 and never gave port 80 back, so a printer whose Mainsail was moved
+  again ended up with both interfaces on the same port, and the one the web server dropped answered
+  nowhere. The rule the plugin now keeps at every start and stop: whichever interface is set to port
+  80 holds it, the other one is on 81.
+- The port is written into the Fluidd site file the web server actually serves. On a printer where
+  that file is a plain copy rather than the stock link, the change used to go into the copy nobody
+  reads, so Fluidd stayed on the same port as Mainsail and disappeared.
+
 ## 0.2.2-experiment
 
 - The remote screen, and any other plugin that adds a page to the printer, now opens when Mainsail
