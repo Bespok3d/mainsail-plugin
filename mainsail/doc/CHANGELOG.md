@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.7
+
+- The remote screen, and any other plugin that adds a page to the printer, now opens when Mainsail
+  is set to port 80. Until now Mainsail answered those addresses with its own page and an empty
+  panel, because its web server did not know where plugins put their pages. Updating this plugin
+  fixes it; nothing else needs reinstalling. On a printer where Mainsail is on port 81, the plugin
+  pages worked already and now work on both ports.
+
 ## 0.1.6
 
 - A print sent straight from a slicer with "start printing after upload" now stops and asks which

@@ -35,4 +35,16 @@ shellcheck_repo "$REPO_ROOT"
 run_check "Bespok3d patches in the Mainsail bundle" \
     "$REPO_ROOT/mainsail/scripts/patch-mainsail.sh" --verify
 
+# Mainsail serves its own nginx site, so it must include the directory where every other plugin
+# drops its web location. Without the line, a printer running Mainsail on port 80 answers the
+# remote screen and every other plugin endpoint with the Mainsail index page instead.
+nginx_site_serves_plugin_endpoints() {
+    grep -Fq 'include /userdata/bespok3d/etc/nginx/locations/*.conf;' "$1"
+}
+
+for plugin_name in mainsail mainsail-bleeding-edge; do
+    run_check "plugin endpoints: $plugin_name" \
+        nginx_site_serves_plugin_endpoints "$REPO_ROOT/$plugin_name/files/nginx/mainsail.conf"
+done
+
 gate_summary || exit 1
