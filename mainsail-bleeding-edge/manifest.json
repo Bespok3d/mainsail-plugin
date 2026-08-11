@@ -11,7 +11,7 @@
   "changelog": "doc/CHANGELOG.md",
   "published_at": "2026-01-10",
   "updated_at": "2026-06-12",
-  "source": "https://github.com/bespok3d-org/plugin-mainsail",
+  "source": "https://github.com/Bespok3d/mainsail-plugin",
   "publisher": "PLACEHOLDER",
   "provides": [
     {
