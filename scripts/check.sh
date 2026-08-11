@@ -45,17 +45,17 @@ nginx_site_serves_plugin_endpoints() {
     grep -Fq 'include /userdata/bespok3d/etc/nginx/locations/*.conf;' "$1"
 }
 
-for plugin_name in mainsail mainsail-bleeding-edge; do
-    # The shared shellcheck pass only sees names ending in .sh, and an init script the printer runs
-    # has no extension, so it is linted here by name.
-    run_check "shellcheck s90mainsail: $plugin_name" \
-        shellcheck --shell=sh "$REPO_ROOT/$plugin_name/files/etc/init.d/s90mainsail"
-    run_check "plugin endpoints: $plugin_name" \
-        nginx_site_serves_plugin_endpoints "$REPO_ROOT/$plugin_name/files/nginx/mainsail.conf"
-    # Only one interface can hold port 80. A printer that breaks the rule silently loses Fluidd or
-    # Mainsail, so the start script is run against a fake nginx tree in both site shapes.
-    run_check "port rule: $plugin_name" \
-        bash "$REPO_ROOT/scripts/test-port-rule.sh" "$REPO_ROOT/$plugin_name"
-done
+mainsail_dir="$REPO_ROOT/mainsail"
+
+# The shared shellcheck pass only sees names ending in .sh, and an init script the printer runs
+# has no extension, so it is linted here by name.
+run_check "shellcheck s90mainsail" \
+    shellcheck --shell=sh "$mainsail_dir/files/etc/init.d/s90mainsail"
+run_check "plugin endpoints" \
+    nginx_site_serves_plugin_endpoints "$mainsail_dir/files/nginx/mainsail.conf"
+# Only one interface can hold port 80. A printer that breaks the rule silently loses Fluidd or
+# Mainsail, so the start script is run against a fake nginx tree in both site shapes.
+run_check "port rule" \
+    bash "$REPO_ROOT/scripts/test-port-rule.sh" "$mainsail_dir"
 
 gate_summary || exit 1
