@@ -34,6 +34,9 @@ npx b3-builder build --source ./mainsail --atom-repo Bespok3d/mainsail-plugin
 # -> dist/mainsail-<ver>.b3 + dist/mainsail.atom.json
 ```
 
+Writing a plugin of your own? Start at the plugin documentation:
+[Bespok3d/b3-builder/doc](https://github.com/Bespok3d/b3-builder/tree/main/doc).
+
 ## Releasing
 
 Bump `mainsail/manifest.json` `version` and push the tag `plugin-<name>-v<version>` naming that
