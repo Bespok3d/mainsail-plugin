@@ -204,7 +204,7 @@ apply_patch "AFC toolmap watcher loaded" "$HTML_DIR/index.html" \
 #    Mainsail keep the page without the script tag, and the watcher never loads for them.
 apply_patch "AFC toolmap watcher cached" "$HTML_DIR/sw.js" \
   '{url:"index.html",revision:"371e714ce82cccb77331ff4a06d1e3e1"}' \
-  '{url:"index.html",revision:"b3d-afc-toolmap-2"}'
+  '{url:"index.html",revision:"b3d-afc-toolmap-4"}'
 
 # 8. The dialog's print button. A held print has not started yet and its file has not been
 #    selected, so upstream's call would start it without the map that was just made; releasing the
@@ -247,13 +247,35 @@ for app_chunk in "$REPO_ROOT"/*/files/html/assets/index-*.js; do
     'emitAndWait("printer.objects.subscribe",{objects:t},{})' \
     "emitAndWait(\"printer.objects.subscribe\",{objects:Object.assign({},t,$CACHE_BUST_KEY)},{})"
 
+  # The same cache answers printer.objects.query. Mainsail waits on both of these before it will
+  # draw anything, so an answer the firmware already gave another connection leaves the page on its
+  # loading screen for good.
+  apply_patch "Moonraker cache bust on the gcode command list ($channel)" "$app_chunk" \
+    'emitAndWait("printer.objects.query",{objects:{gcode:["commands"]}},{})' \
+    "emitAndWait(\"printer.objects.query\",{objects:Object.assign({gcode:[\"commands\"]},$CACHE_BUST_KEY)},{})"
+
+  apply_patch "Moonraker cache bust on the extruder query ($channel)" "$app_chunk" \
+    'emitAndWait("printer.objects.query",{objects:r},{})' \
+    "emitAndWait(\"printer.objects.query\",{objects:Object.assign({},r,$CACHE_BUST_KEY)},{})"
+
+  # printer.objects.list carries no objects, so there is nothing inside it to vary. Moonraker
+  # ignores a parameter it does not know, checked on the bench printer, so a throwaway parameter
+  # makes the request new without changing the answer.
+  apply_patch "Moonraker cache bust on the waited object list ($channel)" "$app_chunk" \
+    'emitAndWait("printer.objects.list")' \
+    "emitAndWait(\"printer.objects.list\",$CACHE_BUST_KEY,{})"
+
+  apply_patch "Moonraker cache bust on the object list ($channel)" "$app_chunk" \
+    '{method:"printer.objects.list",action:"getObjectsList"}' \
+    "{method:\"printer.objects.list\",params:$CACHE_BUST_KEY,action:\"getObjectsList\"}"
+
   # Mainsail's service worker precaches the hashed chunk with a null revision, which tells it the
   # URL can never change its contents. A browser that already holds this build would go on serving
   # the unpatched chunk from its own cache forever; giving the entry a revision is what makes it
   # fetch ours. Bump the revision string whenever the patches above change.
   apply_patch "Moonraker cache bust served fresh ($channel)" "${app_chunk%/assets/*}/sw.js" \
     "{url:\"assets/$(basename "$app_chunk")\",revision:null}" \
-    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-2\"}"
+    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-9\"}"
 
   channels_cache_busted=$((channels_cache_busted + 1))
 done
@@ -282,5 +304,83 @@ apply_patch "Tool button rule loaded" "$HTML_DIR/index.html" \
 apply_patch "Extruder panel hides unused tools" "$APP_CHUNK" \
   'Object.keys(e).filter(i=>i.match(/^T\d+/)).sort(s)' \
   'Object.keys(e).filter(i=>i.match(/^T\d+/)&&(!window.b3dToolButtons||window.b3dToolButtons.keepsToolButton(i,this.$store.state.printer))).sort(s)'
+
+# 11. Which name the AFC tool map shows. Upstream reads the name off the Spoolman record the
+#     browser has cached and shows "--" when that record is missing, so the description the printer
+#     pushes into the lane never reaches it at all. The Bespok3d Spoolman helper pushes the filament
+#     description the printer publishes to the slicer into that lane field on purpose, because the
+#     card already prints the material and the colour on their own lines. Read the lane first and
+#     keep upstream's Spoolman name as the fallback, so a printer without the helper shows exactly
+#     what it showed before.
+apply_patch "AFC lane name" "$APP_CHUNK" \
+  'name:(c=(l=i==null?void 0:i.filament)==null?void 0:l.name)!=null?c:"--",' \
+  'name:(e==null?void 0:e.filament_name)||((l=i==null?void 0:i.filament)==null?void 0:l.name)||"--",'
+
+# 12. The name on the AFC lane CARD, which is a different getter from the tool map above and was
+#     left behind by 11. Upstream already falls back to the lane field, but only when the browser
+#     cannot resolve the Spoolman record, so a printer that resolves it showed Spoolman's own
+#     filament name while Fluidd showed the pushed description. Same order as Fluidd now: the lane
+#     first, Spoolman's name as the fallback.
+apply_patch "AFC lane card name" "$APP_CHUNK" \
+  'get spoolFilamentName(){var s,e;return((e=(s=this.spool)==null?void 0:s.filament)==null?void 0:e.name)||this.lane.filament_name||"Unknown"}' \
+  'get spoolFilamentName(){var s,e;return this.lane.filament_name||((e=(s=this.spool)==null?void 0:s.filament)==null?void 0:e.name)||"Unknown"}'
+
+# 13. The Bespok3d Spoolman buttons in the AFC unit header. The Spoolman Klipper helper registers
+#     the SH_ gcode commands and Klipper publishes every command it has registered, so the rule file
+#     below draws a button only for a command this printer actually answers. On a printer without
+#     that plugin, and on a bundle where the rule file never loaded, the header is upstream's own.
+install_file "AFC Spoolman header buttons" \
+  "$PLUGIN_DIR/patches/afc-spoolman-header.js" \
+  "$HTML_DIR/b3d-afc-spoolman-header.js"
+
+apply_patch "AFC Spoolman header buttons loaded" "$HTML_DIR/index.html" \
+  '<script src="/b3d-tool-buttons.js"></script>' \
+  '<script src="/b3d-tool-buttons.js"></script><script src="/b3d-afc-spoolman-header.js"></script>'
+
+apply_patch "AFC Spoolman header" "$APP_CHUNK" \
+  't(me),e._l(e.hubs,function(r){return t(uI,{key:r,attrs:{name:r}})})' \
+  't(me),window.b3dAfcSpoolmanHeader?window.b3dAfcSpoolmanHeader.headerButtons(t,e):[],e._l(e.hubs,function(r){return t(uI,{key:r,attrs:{name:r}})})'
+
+# 14. The Bespok3d Spoolman bar under every AFC lane, the same bar the Fluidd plugin draws. Same
+#     rule as the header above: a button appears only for a command this printer answers, so a
+#     printer without the Spoolman helper keeps upstream's lane card exactly as it is.
+install_file "AFC lane toolbar" \
+  "$PLUGIN_DIR/patches/afc-lane-toolbar.js" \
+  "$HTML_DIR/b3d-afc-lane-toolbar.js"
+
+apply_patch "AFC lane toolbar loaded" "$HTML_DIR/index.html" \
+  '<script src="/b3d-afc-spoolman-header.js"></script>' \
+  '<script src="/b3d-afc-spoolman-header.js"></script><script src="/b3d-afc-lane-toolbar.js"></script>'
+
+#     The two buttons that need a spool open Mainsail's own spool chooser, which the bundle keeps to
+#     itself. Handing the component out is what lets the bar render an instance of it in the mode
+#     that reports the pick back instead of putting it on the lane.
+apply_patch "Spool chooser reachable" "$APP_CHUNK" \
+  'const Xr=DF.exports;' \
+  'const Xr=DF.exports;window.b3dSpoolChooser=Xr;'
+
+apply_patch "AFC lane toolbar" "$APP_CHUNK" \
+  ':e._e()],1)},IH=[],jH=P(Q1,HH,IH,!1,null,"9b0342d1")' \
+  ':e._e(),window.b3dAfcLaneToolbar?window.b3dAfcLaneToolbar.laneToolbar(t,e):null],1)},IH=[],jH=P(Q1,HH,IH,!1,null,"9b0342d1")'
+
+# 15. The lane filament dialog offers a weight box, and AFC Lite refuses SET_WEIGHT outright, so
+#     typing in it can only ever produce an error. A lane on a Spoolman spool keeps the box, because
+#     Spoolman is what owns that number; a lane without one loses it, and the dialog then sends only
+#     the colour and the material the user came to set. Same behaviour as the Fluidd plugin, which
+#     has upstream's own hasSpoolId getter to lean on where this bundle has none. The divider above
+#     the box goes with it so the dialog has no gap where it was.
+# shellcheck disable=SC2016 # $t is a Vue translation method in the bundle, not a shell variable
+apply_patch "Weight box only on a Spoolman spool" "$APP_CHUNK" \
+  't(j,{staticClass:"my-3"}),t(H,{attrs:{title:e.$t("Panels.AfcPanel.Weight"),"sub-title":e.$t("Panels.AfcPanel.WeightSubtitle")}},[t(se,{attrs:{placeholder:"1000",dense:"",outlined:"",type:"number",min:0,step:1,"hide-details":""},model:{value:e.weight,callback:function(r){e.weight=r},expression:"weight"}})],1),' \
+  'e.lane&&e.lane.spool_id!=null?[t(j,{staticClass:"my-3"}),t(H,{attrs:{title:e.$t("Panels.AfcPanel.Weight"),"sub-title":e.$t("Panels.AfcPanel.WeightSubtitle")}},[t(se,{attrs:{placeholder:"1000",dense:"",outlined:"",type:"number",min:0,step:1,"hide-details":""},model:{value:e.weight,callback:function(r){e.weight=r},expression:"weight"}})],1)]:e._e(),'
+
+# 16. The lane's spool picker lists what the browser fetched from Spoolman when the page loaded, so
+#     a spool added or changed in Spoolman since is not in it and the only way to see it is to
+#     reload the page. Re-reading Spoolman as the picker opens is what keeps the list current. Same
+#     behaviour as the Fluidd plugin, whose store calls that read by another name.
+# shellcheck disable=SC2016 # $store is a Vue property in the bundle, not a shell variable
+apply_patch "Spool picker lists what Spoolman has now" "$APP_CHUNK" \
+  'onFilamentClick(){if(this.afcExistsSpoolman){this.showSpoolmanDialog=!0;return}' \
+  'onFilamentClick(){if(this.afcExistsSpoolman){this.$store.dispatch("server/spoolman/refreshSpools"),this.showSpoolmanDialog=!0;return}'
 
 echo "Done. All Bespok3d patches are present."

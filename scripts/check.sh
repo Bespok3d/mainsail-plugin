@@ -57,5 +57,16 @@ run_check "plugin endpoints" \
 # Mainsail, so the start script is run against a fake nginx tree in both site shapes.
 run_check "port rule" \
     bash "$REPO_ROOT/scripts/test-port-rule.sh" "$mainsail_dir"
+# AFC Lite refuses a hand-typed weight, so a lane with no Spoolman spool must not be offered a
+# weight box: everything a user could type in it comes back as an error.
+run_check "lane weight box" \
+    bash "$REPO_ROOT/scripts/test-weight-box.sh" "$mainsail_dir"
+# The spool bar under each lane, as the user meets it: the strip's arrow and what adding a spool
+# says back when Spoolman cannot know its weight.
+run_check "lane toolbar" \
+    bash "$REPO_ROOT/scripts/test-lane-toolbar.sh" "$mainsail_dir"
+# A spool added in Spoolman has to show in the picker without reloading the page.
+run_check "spool picker refresh" \
+    bash "$REPO_ROOT/scripts/test-spool-picker-refresh.sh" "$mainsail_dir"
 
 gate_summary || exit 1
