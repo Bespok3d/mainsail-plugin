@@ -272,7 +272,7 @@ for app_chunk in "$REPO_ROOT"/*/files/html/assets/index-*.js; do
   # fetch ours. Bump the revision string whenever the patches above change.
   apply_patch "Moonraker cache bust served fresh ($channel)" "${app_chunk%/assets/*}/sw.js" \
     "{url:\"assets/$(basename "$app_chunk")\",revision:null}" \
-    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-11\"}"
+    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-12\"}"
 
   channels_cache_busted=$((channels_cache_busted + 1))
 done
@@ -381,14 +381,5 @@ apply_patch "Weight box only on a Spoolman spool" "$APP_CHUNK" \
 apply_patch "Set button does not wait for a weight" "$APP_CHUNK" \
   'get disableSetBtn(){return!this.material||!this.weight||!this.color}' \
   'get disableSetBtn(){return!this.material||!this.color}'
-
-# 15. The lane's spool picker lists what the browser fetched from Spoolman when the page loaded, so
-#     a spool added or changed in Spoolman since is not in it and the only way to see it is to
-#     reload the page. Re-reading Spoolman as the picker opens is what keeps the list current. Same
-#     behaviour as the Fluidd plugin, whose store calls that read by another name.
-# shellcheck disable=SC2016 # $store is a Vue property in the bundle, not a shell variable
-apply_patch "Spool picker lists what Spoolman has now" "$APP_CHUNK" \
-  'onFilamentClick(){if(this.afcExistsSpoolman){this.showSpoolmanDialog=!0;return}' \
-  'onFilamentClick(){if(this.afcExistsSpoolman){this.$store.dispatch("server/spoolman/refreshSpools"),this.showSpoolmanDialog=!0;return}'
 
 echo "Done. All Bespok3d patches are present."

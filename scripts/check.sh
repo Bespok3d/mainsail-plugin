@@ -65,7 +65,8 @@ run_check "lane weight box" \
 # says back when Spoolman cannot know its weight.
 run_check "lane toolbar" \
     bash "$REPO_ROOT/scripts/test-lane-toolbar.sh" "$mainsail_dir"
-# A spool added in Spoolman has to show in the picker without reloading the page.
+# A spool added in Spoolman has to show in the picker without reloading the page, and the lane's
+# spool button must not read Spoolman a second time.
 run_check "spool picker refresh" \
     bash "$REPO_ROOT/scripts/test-spool-picker-refresh.sh" "$mainsail_dir"
 

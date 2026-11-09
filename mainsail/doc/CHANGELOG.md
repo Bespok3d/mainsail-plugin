@@ -10,6 +10,10 @@
 - The Set button in a lane's filament dialog works the way it did before. The new Mainsail greys Set out
   until a weight is typed, but the printer reports no weight for a lane and refuses one typed in, so
   Set no longer waits for a weight. You set the colour and the material, and press Set.
+- The lane's spool picker asks Spoolman for its spools once when it opens, not twice. Mainsail's own
+  picker already asked every time it opened, so the Bespok3d patch that did the same only sent a
+  second request, and it is gone. The picker still shows a spool you added in Spoolman without
+  reloading the page.
 
 ## 0.1.9
 
