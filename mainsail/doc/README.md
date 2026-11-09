@@ -5,7 +5,7 @@ alongside Fluidd, on a port you choose.
 
 ## What it does
 
-- Serves Mainsail v2.18.0.
+- Serves Mainsail v2.19.0.
 - Runs on port 81 by default, so Fluidd stays on port 80.
 - Set the port to 80 to make Mainsail primary; Fluidd then moves to 81 automatically. Move
   Mainsail off 80 again and Fluidd goes back to it: whichever interface is set to 80 holds it,

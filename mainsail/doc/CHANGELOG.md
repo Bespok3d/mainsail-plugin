@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.10
+
+- Mainsail itself is now 2.19.0, up from 2.18.0. It adds the AFC log to the log files panel, faster
+  console drawing, and fixes for the macro settings and for editing presets. Every Bespok3d change is
+  on top of it as before.
+- Mainsail now shows the right lane in the start print dialog for every tool on a lane that feeds
+  many tools. It fixed this itself, so the Bespok3d patch that did it is gone.
+- The Set button in a lane's filament dialog works the way it did before. The new Mainsail greys Set out
+  until a weight is typed, but the printer reports no weight for a lane and refuses one typed in, so
+  Set no longer waits for a weight. You set the colour and the material, and press Set.
+
 ## 0.1.9
 
 - The AFC lane card shows the filament name the printer put in the lane: the brand, the material and

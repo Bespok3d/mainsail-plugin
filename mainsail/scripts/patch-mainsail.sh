@@ -148,15 +148,15 @@ apply_patch "AFC eject gating" "$APP_CHUNK" \
 #    a printer without the plugin is never sent a command it would reject.
 # shellcheck disable=SC2016 # $socket is a Vue property name in the bundle, not a shell variable
 apply_patch "AFC dialog tool list" "$APP_CHUNK" \
-  'get usedTools(){var t;const s=(t=this.file.filament_weights)!=null?t:[],e=[];return s.forEach((r,i)=>{r>0&&e.push(i)}),e}' \
-  'get usedTools(){var t;const s=(t=this.file.filament_weights||this.file.filament_weight)!=null?t:[],e=[];s.forEach((r,i)=>{r>0&&e.push(i)});var b3dToolsInPlay=window.b3dAfcToolmap&&this.$socket?window.b3dAfcToolmap.toolsInPlayDeclaration(e):"";return b3dToolsInPlay&&this.$socket.emit("printer.gcode.script",{script:b3dToolsInPlay}),e}'
+  'get usedTools(){var e;let t=(e=this.file.filament_weights)==null?[]:e,n=[];return t.forEach((e,t)=>{e>0&&n.push(t)}),n}' \
+  'get usedTools(){var e;let t=(e=this.file.filament_weights||this.file.filament_weight)==null?[]:e,n=[];t.forEach((e,t)=>{e>0&&n.push(t)});var b3dToolsInPlay=window.b3dAfcToolmap&&this.$socket?window.b3dAfcToolmap.toolsInPlayDeclaration(n):"";return b3dToolsInPlay&&this.$socket.emit("printer.gcode.script",{script:b3dToolsInPlay}),n}'
 
 # 3. The weight shown on a per-tool row inside that dialog, same field-name
 #    reason as 2. Upstream already splits the semicolon-joined name and type
 #    Snapmaker publishes, so only the weight needs a second name here.
 apply_patch "AFC dialog tool row" "$APP_CHUNK" \
-  'i=(l=this.file.filament_weights)!=null?l:[];' \
-  'i=(l=this.file.filament_weights||this.file.filament_weight)!=null?l:[];'
+  'u=(r=this.file.filament_weights)==null?[]:r;' \
+  'u=(r=this.file.filament_weights||this.file.filament_weight)==null?[]:r;'
 
 # 3b. The colour shown for each tool in that dialog. Upstream reads
 #    `filament_colors`, which on a U1 is not the file's colours at all: the
@@ -166,27 +166,18 @@ apply_patch "AFC dialog tool row" "$APP_CHUNK" \
 #    semicolon-joined string, which the bundle already knows how to split. Fall
 #    back to the old field, which is all a non-Snapmaker Moonraker publishes.
 apply_patch "AFC dialog tool colour" "$APP_CHUNK" \
-  'const e=(n=this.file.filament_colors)!=null?n:[],' \
-  'const e=this.file.filament_colour?bi(this.file.filament_colour):(n=this.file.filament_colors)!=null?n:[],'
+  'let s=(e=this.file.filament_colors)==null?[]:e,' \
+  'let s=this.file.filament_colour?Zc(this.file.filament_colour):(e=this.file.filament_colors)==null?[]:e,'
 
-# 4. Which lane the dialog says a tool is fed from. The U1 lets many logical
-#    tools draw from one lane, which the u1-afc-lite plugin reports as a list of
-#    tools on the lane. Upstream's own AFC panel already reads that list; this
-#    one getter still assumed a single tool, so every tool past the first showed
-#    NO LANE after it had been assigned.
-apply_patch "AFC lane lookup" "$APP_CHUNK" \
-  'get laneName(){var t,r;return((r=(t=this.afc)==null?void 0:t.lanes)!=null?r:[]).find(i=>{var o;const n=this.getAfcLaneObject(i);return((o=n==null?void 0:n.map)==null?void 0:o.toLowerCase())===this.toolName.toLowerCase()})}' \
-  'get laneName(){var t,r;return((r=(t=this.afc)==null?void 0:t.lanes)!=null?r:[]).find(i=>{const n=this.getAfcLaneObject(i),o=n==null?void 0:n.map,c=Array.isArray(o)?o:[o];return c.some(u=>u!=null&&u.toLowerCase()===this.toolName.toLowerCase())})}'
-
-# 5. Hand the start-print dialog out. Upstream opens it from a file-list row,
+# 4. Hand the start-print dialog out. Upstream opens it from a file-list row,
 #    which owns its own copy, so a browser sitting on any other page has no
 #    dialog at all. The watcher below mounts one of its own instead, and this is
 #    how it gets hold of upstream's component to mount.
 apply_patch "Start-print dialog handed out" "$APP_CHUNK" \
-  'const Ji=Ek.exports' \
-  'const Ji=Ek.exports;window.b3dStartPrintDialog=Ji'
+  'var qh=W(Kh,function(){' \
+  'var qh=window.b3dStartPrintDialog=W(Kh,function(){'
 
-# 6. Open that dialog for a print the printer is already holding. A print sent from a slicer with
+# 5. Open that dialog for a print the printer is already holding. A print sent from a slicer with
 #    "start printing after upload" never reaches a browser, so upstream's trigger (opening the
 #    dialog from the file list) never fires and the file runs with whatever map was left over. The
 #    afc-lite plugin keeps such a print from starting and raises a flag; the watcher below opens
@@ -199,23 +190,23 @@ apply_patch "AFC toolmap watcher loaded" "$HTML_DIR/index.html" \
   '<div id="app"></div>' \
   '<div id="app"></div><script src="/b3d-afc-toolmap.js"></script>'
 
-# 7. Mainsail installs a service worker that serves index.html from its own cache and only refetches
+# 6. Mainsail installs a service worker that serves index.html from its own cache and only refetches
 #    it when the revision string next to it changes. Without this the browsers that already have
 #    Mainsail keep the page without the script tag, and the watcher never loads for them.
 apply_patch "AFC toolmap watcher cached" "$HTML_DIR/sw.js" \
-  '{url:"index.html",revision:"371e714ce82cccb77331ff4a06d1e3e1"}' \
-  '{url:"index.html",revision:"b3d-afc-toolmap-4"}'
+  '{url:"index.html",revision:"ec818674470b1a5a042b3c94b6a3f05e"}' \
+  '{url:"index.html",revision:"b3d-afc-toolmap-5"}'
 
-# 8. The dialog's print button. A held print has not started yet and its file has not been
+# 7. The dialog's print button. A held print has not started yet and its file has not been
 #    selected, so upstream's call would start it without the map that was just made; releasing the
 #    hold is what starts it. With no print held, and on a bundle where the watcher never loaded,
 #    this is upstream's own behaviour.
 # shellcheck disable=SC2016 # $socket is a Vue property name in the bundle, not a shell variable
 apply_patch "AFC toolmap release" "$APP_CHUNK" \
-  'startPrint(s=""){s=(this.currentPath+"/"+s).substring(1),this.closeDialog(),this.$socket.emit("printer.print.start",{filename:s},{action:"switchToDashboard"})}' \
-  'startPrint(s=""){if(window.b3dAfcToolmap&&window.b3dAfcToolmap.releaseHeldPrint()){this.closeDialog(),this.$socket.emit("printer.gcode.script",{script:"AFC_TOOLMAP_GO"});return}s=(this.currentPath+"/"+s).substring(1),this.closeDialog(),this.$socket.emit("printer.print.start",{filename:s},{action:"switchToDashboard"})}'
+  'startPrint(e=``){e=(this.currentPath+`/`+e).substring(1),this.closeDialog(),this.$socket.emit(`printer.print.start`,{filename:e},{action:`switchToDashboard`})}' \
+  'startPrint(e=``){if(window.b3dAfcToolmap&&window.b3dAfcToolmap.releaseHeldPrint()){this.closeDialog(),this.$socket.emit("printer.gcode.script",{script:"AFC_TOOLMAP_GO"});return}e=(this.currentPath+`/`+e).substring(1),this.closeDialog(),this.$socket.emit(`printer.print.start`,{filename:e},{action:`switchToDashboard`})}'
 
-# 9. Moonraker's subscription cache. Snapmaker's firmware answers printer.objects.subscribe out of
+# 8. Moonraker's subscription cache. Snapmaker's firmware answers printer.objects.subscribe out of
 #    another connection's cached status whenever every object asked for is already covered, and
 #    Moonraker never caches configfile.settings. The second browser to open the page, and every
 #    later subscribe the first one makes, therefore gets a configfile with the settings stripped
@@ -238,36 +229,42 @@ for app_chunk in "$REPO_ROOT"/*/files/html/assets/index-*.js; do
   channel="${channel_path%%/*}"
 
   # The subscribe Mainsail makes when it has found new printer objects to watch.
+  # shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
   apply_patch "Moonraker cache bust on new objects ($channel)" "$app_chunk" \
-    's("sendObj",{method:"printer.objects.subscribe",params:{objects:r},action:"getData"})' \
-    "s(\"sendObj\",{method:\"printer.objects.subscribe\",params:{objects:Object.assign({},r,$CACHE_BUST_KEY)},action:\"getData\"})"
+    'e(`sendObj`,{method:`printer.objects.subscribe`,params:{objects:i},action:`getData`})' \
+    'e(`sendObj`,{method:`printer.objects.subscribe`,params:{objects:Object.assign({},i,'"$CACHE_BUST_KEY"')},action:`getData`})'
 
   # The one it waits on a reply for, which is where it reads the bed screw positions.
+  # shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
   apply_patch "Moonraker cache bust on a waited reply ($channel)" "$app_chunk" \
-    'emitAndWait("printer.objects.subscribe",{objects:t},{})' \
-    "emitAndWait(\"printer.objects.subscribe\",{objects:Object.assign({},t,$CACHE_BUST_KEY)},{})"
+    'emitAndWait(`printer.objects.subscribe`,{objects:n},{})' \
+    'emitAndWait(`printer.objects.subscribe`,{objects:Object.assign({},n,'"$CACHE_BUST_KEY"')},{})'
 
   # The same cache answers printer.objects.query. Mainsail waits on both of these before it will
   # draw anything, so an answer the firmware already gave another connection leaves the page on its
   # loading screen for good.
+  # shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
   apply_patch "Moonraker cache bust on the gcode command list ($channel)" "$app_chunk" \
-    'emitAndWait("printer.objects.query",{objects:{gcode:["commands"]}},{})' \
-    "emitAndWait(\"printer.objects.query\",{objects:Object.assign({gcode:[\"commands\"]},$CACHE_BUST_KEY)},{})"
+    'emitAndWait(`printer.objects.query`,{objects:{gcode:[`commands`]}},{})' \
+    'emitAndWait(`printer.objects.query`,{objects:Object.assign({gcode:[`commands`]},'"$CACHE_BUST_KEY"')},{})'
 
+  # shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
   apply_patch "Moonraker cache bust on the extruder query ($channel)" "$app_chunk" \
-    'emitAndWait("printer.objects.query",{objects:r},{})' \
-    "emitAndWait(\"printer.objects.query\",{objects:Object.assign({},r,$CACHE_BUST_KEY)},{})"
+    'emitAndWait(`printer.objects.query`,{objects:r},{})' \
+    'emitAndWait(`printer.objects.query`,{objects:Object.assign({},r,'"$CACHE_BUST_KEY"')},{})'
 
   # printer.objects.list carries no objects, so there is nothing inside it to vary. Moonraker
   # ignores a parameter it does not know, checked on the bench printer, so a throwaway parameter
   # makes the request new without changing the answer.
+  # shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
   apply_patch "Moonraker cache bust on the waited object list ($channel)" "$app_chunk" \
-    'emitAndWait("printer.objects.list")' \
-    "emitAndWait(\"printer.objects.list\",$CACHE_BUST_KEY,{})"
+    'emitAndWait(`printer.objects.list`)' \
+    'emitAndWait(`printer.objects.list`,'"$CACHE_BUST_KEY"',{})'
 
+  # shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
   apply_patch "Moonraker cache bust on the object list ($channel)" "$app_chunk" \
-    '{method:"printer.objects.list",action:"getObjectsList"}' \
-    "{method:\"printer.objects.list\",params:$CACHE_BUST_KEY,action:\"getObjectsList\"}"
+    '{method:`printer.objects.list`,action:`getObjectsList`}' \
+    '{method:`printer.objects.list`,params:'"$CACHE_BUST_KEY"',action:`getObjectsList`}'
 
   # Mainsail's service worker precaches the hashed chunk with a null revision, which tells it the
   # URL can never change its contents. A browser that already holds this build would go on serving
@@ -275,7 +272,7 @@ for app_chunk in "$REPO_ROOT"/*/files/html/assets/index-*.js; do
   # fetch ours. Bump the revision string whenever the patches above change.
   apply_patch "Moonraker cache bust served fresh ($channel)" "${app_chunk%/assets/*}/sw.js" \
     "{url:\"assets/$(basename "$app_chunk")\",revision:null}" \
-    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-9\"}"
+    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-11\"}"
 
   channels_cache_busted=$((channels_cache_busted + 1))
 done
@@ -285,7 +282,7 @@ if [ "$channels_cache_busted" -eq 0 ]; then
   exit 1
 fi
 
-# 10. The Extruder panel's tool buttons. The U1 registers a T0 to T31 gcode macro whatever it has
+# 9. The Extruder panel's tool buttons. The U1 registers a T0 to T31 gcode macro whatever it has
 #     lanes for, and the printer saves a T0.10001 style macro next to each, so the panel lists them
 #     all on a 4 lane printer. The settings file the daemon renders at install says whether the
 #     plugin's "Hide unused tool buttons" setting is on and holds the rule; the panel asks it,
@@ -302,30 +299,32 @@ apply_patch "Tool button rule loaded" "$HTML_DIR/index.html" \
 
 # shellcheck disable=SC2016 # $store is a Vue property name in the bundle, not a shell variable
 apply_patch "Extruder panel hides unused tools" "$APP_CHUNK" \
-  'Object.keys(e).filter(i=>i.match(/^T\d+/)).sort(s)' \
-  'Object.keys(e).filter(i=>i.match(/^T\d+/)&&(!window.b3dToolButtons||window.b3dToolButtons.keepsToolButton(i,this.$store.state.printer))).sort(s)'
+  'Object.keys(r).filter(e=>e.match(/^T\d+/)).sort(n)' \
+  'Object.keys(r).filter(e=>e.match(/^T\d+/)&&(!window.b3dToolButtons||window.b3dToolButtons.keepsToolButton(e,this.$store.state.printer))).sort(n)'
 
-# 11. Which name the AFC tool map shows. Upstream reads the name off the Spoolman record the
+# 10. Which name the AFC tool map shows. Upstream reads the name off the Spoolman record the
 #     browser has cached and shows "--" when that record is missing, so the description the printer
 #     pushes into the lane never reaches it at all. The Bespok3d Spoolman helper pushes the filament
 #     description the printer publishes to the slicer into that lane field on purpose, because the
 #     card already prints the material and the colour on their own lines. Read the lane first and
 #     keep upstream's Spoolman name as the fallback, so a printer without the helper shows exactly
 #     what it showed before.
+# shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
 apply_patch "AFC lane name" "$APP_CHUNK" \
-  'name:(c=(l=i==null?void 0:i.filament)==null?void 0:l.name)!=null?c:"--",' \
-  'name:(e==null?void 0:e.filament_name)||((l=i==null?void 0:i.filament)==null?void 0:l.name)||"--",'
+  'name:(i=u==null||(a=u.filament)==null?void 0:a.name)==null?`--`:i,' \
+  'name:(c==null?void 0:c.filament_name)||(u==null||(a=u.filament)==null?void 0:a.name)||`--`,'
 
-# 12. The name on the AFC lane CARD, which is a different getter from the tool map above and was
-#     left behind by 11. Upstream already falls back to the lane field, but only when the browser
+# 11. The name on the AFC lane CARD, which is a different getter from the tool map above and was
+#     left behind by 10. Upstream already falls back to the lane field, but only when the browser
 #     cannot resolve the Spoolman record, so a printer that resolves it showed Spoolman's own
 #     filament name while Fluidd showed the pushed description. Same order as Fluidd now: the lane
 #     first, Spoolman's name as the fallback.
+# shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
 apply_patch "AFC lane card name" "$APP_CHUNK" \
-  'get spoolFilamentName(){var s,e;return((e=(s=this.spool)==null?void 0:s.filament)==null?void 0:e.name)||this.lane.filament_name||"Unknown"}' \
-  'get spoolFilamentName(){var s,e;return this.lane.filament_name||((e=(s=this.spool)==null?void 0:s.filament)==null?void 0:e.name)||"Unknown"}'
+  'get spoolFilamentName(){var e;return((e=this.spool)==null||(e=e.filament)==null?void 0:e.name)||this.lane.filament_name||`Unknown`}' \
+  'get spoolFilamentName(){var e;return this.lane.filament_name||((e=this.spool)==null||(e=e.filament)==null?void 0:e.name)||`Unknown`}'
 
-# 13. The Bespok3d Spoolman buttons in the AFC unit header. The Spoolman Klipper helper registers
+# 12. The Bespok3d Spoolman buttons in the AFC unit header. The Spoolman Klipper helper registers
 #     the SH_ gcode commands and Klipper publishes every command it has registered, so the rule file
 #     below draws a button only for a command this printer actually answers. On a printer without
 #     that plugin, and on a bundle where the rule file never loaded, the header is upstream's own.
@@ -338,10 +337,10 @@ apply_patch "AFC Spoolman header buttons loaded" "$HTML_DIR/index.html" \
   '<script src="/b3d-tool-buttons.js"></script><script src="/b3d-afc-spoolman-header.js"></script>'
 
 apply_patch "AFC Spoolman header" "$APP_CHUNK" \
-  't(me),e._l(e.hubs,function(r){return t(uI,{key:r,attrs:{name:r}})})' \
-  't(me),window.b3dAfcSpoolmanHeader?window.b3dAfcSpoolmanHeader.headerButtons(t,e):[],e._l(e.hubs,function(r){return t(uI,{key:r,attrs:{name:r}})})'
+  't(F),e._l(e.hubs,function(e){return t(Ug,{key:e,attrs:{name:e}})})' \
+  't(F),window.b3dAfcSpoolmanHeader?window.b3dAfcSpoolmanHeader.headerButtons(t,e):[],e._l(e.hubs,function(e){return t(Ug,{key:e,attrs:{name:e}})})'
 
-# 14. The Bespok3d Spoolman bar under every AFC lane, the same bar the Fluidd plugin draws. Same
+# 13. The Bespok3d Spoolman bar under every AFC lane, the same bar the Fluidd plugin draws. Same
 #     rule as the header above: a button appears only for a command this printer answers, so a
 #     printer without the Spoolman helper keeps upstream's lane card exactly as it is.
 install_file "AFC lane toolbar" \
@@ -356,14 +355,15 @@ apply_patch "AFC lane toolbar loaded" "$HTML_DIR/index.html" \
 #     itself. Handing the component out is what lets the bar render an instance of it in the mode
 #     that reports the pick back instead of putting it on the lane.
 apply_patch "Spool chooser reachable" "$APP_CHUNK" \
-  'const Xr=DF.exports;' \
-  'const Xr=DF.exports;window.b3dSpoolChooser=Xr;'
+  'var th=W(eh,function(){' \
+  'var th=window.b3dSpoolChooser=W(eh,function(){'
 
+# shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
 apply_patch "AFC lane toolbar" "$APP_CHUNK" \
-  ':e._e()],1)},IH=[],jH=P(Q1,HH,IH,!1,null,"9b0342d1")' \
-  ':e._e(),window.b3dAfcLaneToolbar?window.b3dAfcLaneToolbar.laneToolbar(t,e):null],1)},IH=[],jH=P(Q1,HH,IH,!1,null,"9b0342d1")'
+  ':e._e()],1)},[],!1,null,`9b0342d1`' \
+  ':e._e(),window.b3dAfcLaneToolbar?window.b3dAfcLaneToolbar.laneToolbar(t,e):null],1)},[],!1,null,`9b0342d1`'
 
-# 15. The lane filament dialog offers a weight box, and AFC Lite refuses SET_WEIGHT outright, so
+# 14. The lane filament dialog offers a weight box, and AFC Lite refuses SET_WEIGHT outright, so
 #     typing in it can only ever produce an error. A lane on a Spoolman spool keeps the box, because
 #     Spoolman is what owns that number; a lane without one loses it, and the dialog then sends only
 #     the colour and the material the user came to set. Same behaviour as the Fluidd plugin, which
@@ -371,10 +371,18 @@ apply_patch "AFC lane toolbar" "$APP_CHUNK" \
 #     the box goes with it so the dialog has no gap where it was.
 # shellcheck disable=SC2016 # $t is a Vue translation method in the bundle, not a shell variable
 apply_patch "Weight box only on a Spoolman spool" "$APP_CHUNK" \
-  't(j,{staticClass:"my-3"}),t(H,{attrs:{title:e.$t("Panels.AfcPanel.Weight"),"sub-title":e.$t("Panels.AfcPanel.WeightSubtitle")}},[t(se,{attrs:{placeholder:"1000",dense:"",outlined:"",type:"number",min:0,step:1,"hide-details":""},model:{value:e.weight,callback:function(r){e.weight=r},expression:"weight"}})],1),' \
-  'e.lane&&e.lane.spool_id!=null?[t(j,{staticClass:"my-3"}),t(H,{attrs:{title:e.$t("Panels.AfcPanel.Weight"),"sub-title":e.$t("Panels.AfcPanel.WeightSubtitle")}},[t(se,{attrs:{placeholder:"1000",dense:"",outlined:"",type:"number",min:0,step:1,"hide-details":""},model:{value:e.weight,callback:function(r){e.weight=r},expression:"weight"}})],1)]:e._e(),'
+  't(c,{staticClass:`my-3`}),t(q,{attrs:{title:e.$t(`Panels.AfcPanel.Weight`),"sub-title":e.$t(`Panels.AfcPanel.WeightSubtitle`)}},[t(o,{attrs:{placeholder:`1000`,dense:``,outlined:``,type:`number`,min:0,step:1,"hide-details":``},model:{value:e.weight,callback:function(t){e.weight=t},expression:`weight`}})],1),' \
+  'e.lane&&e.lane.spool_id!=null?[t(c,{staticClass:`my-3`}),t(q,{attrs:{title:e.$t(`Panels.AfcPanel.Weight`),"sub-title":e.$t(`Panels.AfcPanel.WeightSubtitle`)}},[t(o,{attrs:{placeholder:`1000`,dense:``,outlined:``,type:`number`,min:0,step:1,"hide-details":``},model:{value:e.weight,callback:function(t){e.weight=t},expression:`weight`}})],1)]:e._e(),'
 
-# 16. The lane's spool picker lists what the browser fetched from Spoolman when the page loaded, so
+#     Upstream will not let Set be pressed until a weight is typed. AFC Lite reports no lane weight,
+#     so the box always opens at 0, and it refuses any weight typed in; a lane without a spool has
+#     no box at all. Set therefore goes back to not waiting for a weight, as it did before this
+#     version, and the dialog still sends SET_WEIGHT only once something is typed in the box.
+apply_patch "Set button does not wait for a weight" "$APP_CHUNK" \
+  'get disableSetBtn(){return!this.material||!this.weight||!this.color}' \
+  'get disableSetBtn(){return!this.material||!this.color}'
+
+# 15. The lane's spool picker lists what the browser fetched from Spoolman when the page loaded, so
 #     a spool added or changed in Spoolman since is not in it and the only way to see it is to
 #     reload the page. Re-reading Spoolman as the picker opens is what keeps the list current. Same
 #     behaviour as the Fluidd plugin, whose store calls that read by another name.
