@@ -69,5 +69,9 @@ run_check "lane toolbar" \
 # spool button must not read Spoolman a second time.
 run_check "spool picker refresh" \
     bash "$REPO_ROOT/scripts/test-spool-picker-refresh.sh" "$mainsail_dir"
+# A dual, tri colour or gradient spool is drawn in all its colours, taking whichever of Spoolman and
+# the lane's tag names more of them, and a one colour spool looks exactly as upstream draws it.
+run_check "multi colour spools" \
+    node "$REPO_ROOT/scripts/test-spool-colours.mjs" "$mainsail_dir"
 
 gate_summary || exit 1

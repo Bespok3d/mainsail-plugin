@@ -14,6 +14,12 @@
   picker already asked every time it opened, so the Bespok3d patch that did the same only sent a
   second request, and it is gone. The picker still shows a spool you added in Spoolman without
   reloading the page.
+- A multi colour spool (dual colour, tri colour, gradient silk) shows all its colours, in stripes,
+  on the reel of an AFC lane, on the extruder tool buttons and in the Spoolman tools list. They used
+  to show one colour only, and black for a spool whose colours Spoolman keeps in a list.
+- When Spoolman and the spool's tag disagree on how many colours it has, the one naming more colours
+  is shown, there and on the active spool and in the change spool list, so in those places a multi
+  colour spool is never shown as a single colour.
 
 ## 0.1.9
 

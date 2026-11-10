@@ -195,7 +195,7 @@ apply_patch "AFC toolmap watcher loaded" "$HTML_DIR/index.html" \
 #    Mainsail keep the page without the script tag, and the watcher never loads for them.
 apply_patch "AFC toolmap watcher cached" "$HTML_DIR/sw.js" \
   '{url:"index.html",revision:"ec818674470b1a5a042b3c94b6a3f05e"}' \
-  '{url:"index.html",revision:"b3d-afc-toolmap-5"}'
+  '{url:"index.html",revision:"b3d-afc-toolmap-6"}'
 
 # 7. The dialog's print button. A held print has not started yet and its file has not been
 #    selected, so upstream's call would start it without the map that was just made; releasing the
@@ -272,7 +272,7 @@ for app_chunk in "$REPO_ROOT"/*/files/html/assets/index-*.js; do
   # fetch ours. Bump the revision string whenever the patches above change.
   apply_patch "Moonraker cache bust served fresh ($channel)" "${app_chunk%/assets/*}/sw.js" \
     "{url:\"assets/$(basename "$app_chunk")\",revision:null}" \
-    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-12\"}"
+    "{url:\"assets/$(basename "$app_chunk")\",revision:\"b3d-cachebust-13\"}"
 
   channels_cache_busted=$((channels_cache_busted + 1))
 done
@@ -381,5 +381,47 @@ apply_patch "Weight box only on a Spoolman spool" "$APP_CHUNK" \
 apply_patch "Set button does not wait for a weight" "$APP_CHUNK" \
   'get disableSetBtn(){return!this.material||!this.weight||!this.color}' \
   'get disableSetBtn(){return!this.material||!this.color}'
+
+# 15. Every colour of a multi colour spool, the same rule the Fluidd plugin ships. Upstream draws
+#     the lane reel and the tool dots in Spoolman's single colour, which a multi colour filament
+#     leaves empty, and its spool icons read Spoolman's list only. Each view asks the rule for the
+#     richest of Spoolman's colours and the lane's tag, and keeps upstream's own value for a spool
+#     of one colour or when the rule did not load.
+install_file "Spool colours rule" \
+  "$PLUGIN_DIR/patches/spool-colours.js" \
+  "$HTML_DIR/b3d-spool-colours.js"
+
+apply_patch "Spool colours rule loaded" "$HTML_DIR/index.html" \
+  '<script src="/b3d-afc-lane-toolbar.js"></script>' \
+  '<script src="/b3d-afc-lane-toolbar.js"></script><script src="/b3d-spool-colours.js"></script>'
+
+#     The spool icon draws a list of colours itself, in the direction Spoolman gives, so the active
+#     spool and each row of the change spool dialog hand it the richest list.
+# shellcheck disable=SC2016 # $store is a Vue property name in the bundle, not a shell variable
+apply_patch "Spool colours on the active spool" "$APP_CHUNK" \
+  'get multi_color_hexes(){var e;return(e=this.active_spool)==null||(e=e.filament)==null?void 0:e.multi_color_hexes}' \
+  'get multi_color_hexes(){var e,b3dUpstreamHexes=(e=this.active_spool)==null||(e=e.filament)==null?void 0:e.multi_color_hexes;return window.b3dSpoolColours?window.b3dSpoolColours.multiColourHexes(b3dUpstreamHexes,this.$store.state.printer,this.active_spool):b3dUpstreamHexes}'
+
+# shellcheck disable=SC2016 # $store is a Vue property name in the bundle, not a shell variable
+apply_patch "Spool colours in the change spool dialog" "$APP_CHUNK" \
+  'get multi_color_hexes(){var e;return(e=this.spool.filament)==null?void 0:e.multi_color_hexes}' \
+  'get multi_color_hexes(){var e,b3dUpstreamHexes=(e=this.spool.filament)==null?void 0:e.multi_color_hexes;return window.b3dSpoolColours?window.b3dSpoolColours.multiColourHexes(b3dUpstreamHexes,this.$store.state.printer,this.spool):b3dUpstreamHexes}'
+
+#     A tool dot is a plain coloured circle, so the stripes go in as its background image.
+# shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
+apply_patch "Spool colours on the extruder tool buttons" "$APP_CHUNK" \
+  'get dotStyle(){return{"border-color":this.active?this.primaryTextColor:``,"background-color":`#`+this.color}}' \
+  'get dotStyle(){var b3dUpstreamStyle={"border-color":this.active?this.primaryTextColor:``,"background-color":`#`+this.color};return window.b3dSpoolColours?window.b3dSpoolColours.toolDotStyle(b3dUpstreamStyle,this.$store.state.printer,this.spool):b3dUpstreamStyle}'
+
+# shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
+apply_patch "Spool colours in the Spoolman tools list" "$APP_CHUNK" \
+  'get dotStyle(){return{"background-color":`#`+this.color}}' \
+  'get dotStyle(){var b3dUpstreamStyle={"background-color":`#`+this.color};return window.b3dSpoolColours?window.b3dSpoolColours.toolDotStyle(b3dUpstreamStyle,this.$store.state.printer,this.spool):b3dUpstreamStyle}'
+
+#     The colour a TD-1 measured, when the user chose to show it, still wins on the reel.
+# shellcheck disable=SC2016 # the backticks are a JavaScript string literal in the bundle, not shell
+apply_patch "Spool colours on the AFC lane reel" "$APP_CHUNK" \
+  'get spoolColor(){return this.hasTd&&this.showTd1Color?`#${this.tdColor}`:this.lane.color||`#000000`}' \
+  'get spoolColor(){var b3dUpstreamColour=this.lane.color||`#000000`;return this.hasTd&&this.showTd1Color?`#${this.tdColor}`:window.b3dSpoolColours?window.b3dSpoolColours.laneReelFill(b3dUpstreamColour,this.spool,this.lane):b3dUpstreamColour}'
 
 echo "Done. All Bespok3d patches are present."

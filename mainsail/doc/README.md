@@ -11,6 +11,8 @@ alongside Fluidd, on a port you choose.
   Mainsail off 80 again and Fluidd goes back to it: whichever interface is set to 80 holds it,
   the other one is on 81.
 - A print-start dialog that maps the file's tools onto your AFC lanes before the print begins.
+- Multi colour spools drawn in all their colours, on the AFC lane reels, the tool buttons, the
+  Spoolman tools list, the active spool and the change spool list.
 
 ## Mapping lanes for a print sent from the slicer
 
